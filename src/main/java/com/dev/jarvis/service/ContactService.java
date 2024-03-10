@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -38,10 +39,24 @@ public class ContactService {
                     .email(contactRequestDto.getEmail())
                     .phoneNumber(contactRequestDto.getPhoneNumber())
                     .linkPrecedence("SECONDARY")
-                    .linkedId(existingContactList.get(0).getId())
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
+
+            //Existing contact found - checking whether it contains linkedId
+            Optional<Integer> existingLinkedId =  existingContactList.stream()
+                    .filter(cont -> cont.getLinkedId() != null)
+                    .map(cont -> cont.getLinkedId())
+                    .findFirst();
+
+            //getting Primary Contact Id
+            Contact primaryContact;
+            if(existingLinkedId.isPresent()){
+                primaryContact = contactRepository.getReferenceById(existingLinkedId.get());
+                contact.setLinkedId(primaryContact.getId());
+            }else{
+                contact.setLinkedId(existingContactList.get(0).getId());
+            }
 
         }
         Contact savedContact = contactRepository.save(contact);
